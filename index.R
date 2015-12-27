@@ -5,14 +5,14 @@ WindowsMultiProcess <- function() {
       print("Setting Up Multiprocess for Windows")
       library(doSNOW) 
       library(foreach) 
-      c1 <- makeCluster(detectCores()) 
+      c1 <- makeCluster(8) 
       registerDoSNOW(c1)        
 }
 
 UnixMultiProcess <- function(name) {
       print(paste0("Setting up multicore processing for Unix style OS: ", name))
       library(doParallel)
-      c1 <- makeCluster(detectCores())
+      c1 <- makeCluster(8)
       registerDoParallel(c1)
 }
 

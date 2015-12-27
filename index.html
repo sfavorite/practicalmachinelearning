@@ -80,8 +80,11 @@ img {
 training &lt;- read.csv(&quot;train_data.csv&quot;)
 download.file(&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;, destfile=&quot;test_data.csv&quot;, method = &quot;curl&quot;)
 testing &lt;- read.csv(&quot;test_data.csv&quot;)
-library(doParallel)
-require(doParallel)
+library(doParallel)</code></pre>
+<pre><code>FALSE Loading required package: foreach
+FALSE Loading required package: iterators
+FALSE Loading required package: parallel</code></pre>
+<pre class="r"><code>require(doParallel)
 detected &lt;- detectCores()
 c1 &lt;- makeCluster(detected)
 registerDoParallel(c1)
@@ -155,8 +158,12 @@ clean.data &lt;- clean.data[, !remove]
 clean.data &lt;- clean.data[, sapply(clean.data, is.numeric)]
 clean.data$classe &lt;- training$classe</code></pre>
 <p>Now subset the data into our training and test sets with 75% going to the training set and 25% going to testing.</p>
-<pre class="r"><code>library(caret)
-# Break training into a test and train
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Warning: package 'caret' was built under R version 3.2.2</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre><code>## Warning: package 'ggplot2' was built under R version 3.2.3</code></pre>
+<pre class="r"><code># Break training into a test and train
 inTrain &lt;- createDataPartition(y = clean.data$classe, p=.75, list=FALSE)
 clean.train &lt;- clean.data[inTrain,]
 clean.test &lt;- clean.data[-inTrain,]</code></pre>
@@ -177,7 +184,7 @@ clean.test &lt;- clean.data[-inTrain,]</code></pre>
 <div id="preprocessing-control" class="section level2">
 <h2>Preprocessing &amp; Control</h2>
 <p>Set our preprocessing and training control paramaters</p>
-<pre class="r"><code>ctrl &lt;- trainControl(method=&quot;repeatedcv&quot;, repeats = 1)</code></pre>
+<pre class="r"><code>ctrl &lt;- trainControl(method=&quot;repeatedcv&quot;, repeats = 5)</code></pre>
 <p>Are model will repeat 5 times with 10 folds to find the “best” model for this data set.</p>
 </div>
 <div id="training" class="section level2">
@@ -200,14 +207,14 @@ clean.test &lt;- clean.data[-inTrain,]</code></pre>
 ##     5 classes: 'A', 'B', 'C', 'D', 'E' 
 ## 
 ## No pre-processing
-## Resampling: Cross-Validated (10 fold, repeated 1 times) 
+## Resampling: Cross-Validated (10 fold, repeated 5 times) 
 ## Summary of sample sizes: 13247, 13246, 13244, 13247, 13246, 13246, ... 
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
-##    2    0.9920495  0.9899420  0.002586114  0.003272429
-##   27    0.9926609  0.9907162  0.002863694  0.003623292
-##   52    0.9896025  0.9868469  0.003994123  0.005053117
+##    2    0.9921047  0.9900117  0.002305430  0.002917119
+##   27    0.9921725  0.9900981  0.002573555  0.003256116
+##   52    0.9893327  0.9865054  0.003383109  0.004279787
 ## 
 ## Accuracy was used to select the optimal model using  the largest value.
 ## The final value used for the model was mtry = 27.</code></pre>
@@ -222,42 +229,45 @@ confusionMatrix(clean.test$classe, predictions)</code></pre>
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1394    0    1    0    0
-##          B   10  936    3    0    0
-##          C    0    0  853    2    0
-##          D    0    0    7  797    0
-##          E    0    0    1    2  898
+##          B    8  938    3    0    0
+##          C    0    2  851    2    0
+##          D    0    0    5  799    0
+##          E    0    0    1    1  899
 ## 
 ## Overall Statistics
-##                                           
-##                Accuracy : 0.9947          
-##                  95% CI : (0.9922, 0.9965)
-##     No Information Rate : 0.2863          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.9933          
-##  Mcnemar's Test P-Value : NA              
+##                                         
+##                Accuracy : 0.9953        
+##                  95% CI : (0.993, 0.997)
+##     No Information Rate : 0.2859        
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16     
+##                                         
+##                   Kappa : 0.9941        
+##  Mcnemar's Test P-Value : NA            
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9929   1.0000   0.9861   0.9950   1.0000
-## Specificity            0.9997   0.9967   0.9995   0.9983   0.9993
-## Pos Pred Value         0.9993   0.9863   0.9977   0.9913   0.9967
-## Neg Pred Value         0.9972   1.0000   0.9970   0.9990   1.0000
-## Prevalence             0.2863   0.1909   0.1764   0.1633   0.1831
-## Detection Rate         0.2843   0.1909   0.1739   0.1625   0.1831
+## Sensitivity            0.9943   0.9979   0.9884   0.9963   1.0000
+## Specificity            0.9997   0.9972   0.9990   0.9988   0.9995
+## Pos Pred Value         0.9993   0.9884   0.9953   0.9938   0.9978
+## Neg Pred Value         0.9977   0.9995   0.9975   0.9993   1.0000
+## Prevalence             0.2859   0.1917   0.1756   0.1635   0.1833
+## Detection Rate         0.2843   0.1913   0.1735   0.1629   0.1833
 ## Detection Prevalence   0.2845   0.1935   0.1743   0.1639   0.1837
-## Balanced Accuracy      0.9963   0.9984   0.9928   0.9967   0.9996</code></pre>
+## Balanced Accuracy      0.9970   0.9975   0.9937   0.9975   0.9998</code></pre>
 </div>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
 <pre class="r"><code>accuracy &lt;- postResample(predictions, clean.test$classe)
 accuracy</code></pre>
 <pre><code>##  Accuracy     Kappa 
-## 0.9946982 0.9932927</code></pre>
-<p>Accuracy: 0.9946982</p>
-<p>Kappa: 0.9932927</p>
-<p>Out-of-sample error: 0.0053018 ``` ## Predicting testing set</p>
+## 0.9953100 0.9940668</code></pre>
+<p>Accuracy: 0.99531</p>
+<p>Kappa: 0.9940668</p>
+<p>Out-of-sample error: 0.00469</p>
+</div>
+<div id="predicting-testing-set" class="section level2">
+<h2>Predicting testing set</h2>
 <pre class="r"><code>predict(modelRF, newdata=testing)</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
@@ -287,9 +297,9 @@ accuracy</code></pre>
 ## [8] base     
 ## 
 ## other attached packages:
-## [1] randomForest_4.6-12 doParallel_1.0.10   iterators_1.0.8    
-## [4] foreach_1.4.3       caret_6.0-62        ggplot2_2.0.0      
-## [7] lattice_0.20-33    
+## [1] randomForest_4.6-12 caret_6.0-62        ggplot2_2.0.0      
+## [4] lattice_0.20-33     doParallel_1.0.10   iterators_1.0.8    
+## [7] foreach_1.4.3      
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] Rcpp_0.12.2        compiler_3.2.0     formatR_1.2.1     
