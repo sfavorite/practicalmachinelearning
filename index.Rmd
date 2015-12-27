@@ -1,0 +1,140 @@
+---
+title: "Practical Machine Learning Project"
+author: "Scot Favorite"
+date: "December 9, 2015"
+output: html_document
+---
+
+## Executive Summary
+
+This report will utilize [Quantified Self](https://en.wikipedia.org/wiki/Quantified_Self) data on Weight Lifting to build a model which will help us to predict the manner in which, correctly or incorrectly, the participante did a given exercise. The classe variable in the trainin set will be the outcome we will be trying to predict. The data will be broken into training and testing sets. We will build our learning model using cross-validation on the training set, once we are satisified by the results we will test our model against the testing data set we created. 
+
+We will build our model using the caret package, test multiple models and choose the one with the greatest accuracy rate. 
+
+There is also a test set provided that does not have the labels for classe provided; we will use this data set and make predictions on the classe type which will be submitted for grading. 
+
+## Setup Libraries and read in data
+
+We download the training and testing data into a local file, train_data.csv & test_data.csv, and setup multiprocessing.
+
+```{r, cache=TRUE, comment=FALSE}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile="train_data.csv", method = "curl")
+training <- read.csv("train_data.csv")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile="test_data.csv", method = "curl")
+testing <- read.csv("test_data.csv")
+library(doParallel)
+require(doParallel)
+detected <- detectCores()
+c1 <- makeCluster(detected)
+registerDoParallel(c1)
+set.seed(32323)
+```
+
+## Cleaning and Subsetting Data
+
+We have two sets of data, training and testing. For the modeling and initial testing we will be working with the training data set, the testing set has no classe label and will be used for model grading.
+
+```{r}
+# Get the class of each variable minus the classe variable
+var.type <- sapply(training[, 1:length(training)-1], class)
+# Subset the variables that are factor variables
+cols <- grep("factor", var.type)
+factor.names <- names(training[,cols])
+# List factor variables
+str(training[, factor.names])
+```
+There are four other variables we can remove before building our model. 
+```{r}
+str(training[1:4])
+```
+Now that we know which variables we are going to remove we will create a "clean" data set with these columns removed. 
+```{r}
+# Remove incomplete cases
+clean.data <- training[lapply(training, function(x) sum(is.na(x)) / length(x)) == 0]
+
+# Remove factor variables minus classe
+clean.data <- clean.data[, !names(clean.data) %in% factor.names]
+clean.data$user_name <- NULL
+clean.data$new_window <- NULL
+clean.data$num_window <- NULL
+remove <- grepl("^X|timestamp|window", names(clean.data))
+clean.data <- clean.data[, !remove]
+clean.data <- clean.data[, sapply(clean.data, is.numeric)]
+clean.data$classe <- training$classe
+```
+
+Now subset the data into our training and test sets with 75% going to the training set and 25% going to testing. 
+```{r}
+library(caret)
+# Break training into a test and train
+inTrain <- createDataPartition(y = clean.data$classe, p=.75, list=FALSE)
+clean.train <- clean.data[inTrain,]
+clean.test <- clean.data[-inTrain,]
+```
+
+We have `r dim(training)[1]` training and `r dim(testing)[1]` testing observations with `r dim(training)[2]` observations in both. The variable we will be predicting will be the "classe" variable. The original website, that provided the data, shows the classe variable (the variable we will be predicting) is broken into five specifications:
+
+1) Class A: specified execution of the exercise (doing it correctly)
+2) Class B: throwing the elbows to the front 
+3) Class C: lifting the dumbbell only halfway 
+4) Class D: lowering the dumbbell only halfway 
+5) Class E: and throwing the hips to the front
+
+We can see taht we have the 5 levels we are expecting. 
+```{r}
+table(clean.train$classe)
+```
+
+## Preprocessing & Control
+Set our preprocessing and training control paramaters
+```{r}
+ctrl <- trainControl(method="repeatedcv", repeats = 5)
+```
+Are model will repeat 5 times with 10 folds to find the "best" model for this data set. 
+
+## Training 
+```{r}
+modelRF <- train(classe ~ ., data = clean.train, method = "rf", trControl = ctrl)
+modelRF
+```
+
+## Prediction
+The goal is to have an accuracy of 90% or better and an out-of-sample error less than 10%. Let's see how we did. 
+```{r}
+predictions <- predict(modelRF$finalModel, newdata=clean.test)
+confusionMatrix(clean.test$classe, predictions)
+```
+
+
+## Summary
+```{r}
+accuracy <- postResample(predictions, clean.test$classe)
+accuracy
+```
+Accuracy: `r accuracy[1]`
+
+Kappa: `r accuracy[2]`
+
+Out-of-sample error: `r 1-accuracy[1]`
+```
+## Predicting testing set
+```{r}
+predict(modelRF, newdata=testing)
+```
+
+## Appendix A - Data Citation
+The original data was genoroulsy provided by:
+
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6. 
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3usSa2AjC
+
+The data in this report is a subset provided as part of the Coursera John Hopkins Data Science program:
+
+##### ADD LINK to coursera data
+
+## Appendix B - System Info
+```{r} 
+sessionInfo()
+```
+
